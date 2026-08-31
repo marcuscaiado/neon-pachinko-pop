@@ -365,17 +365,13 @@
         localStorage.setItem('neon_pachinko_best', bestScore);
         document.getElementById('final-score').textContent = score;
         document.getElementById('best-score').textContent = bestScore;
+        document.getElementById('modal').style.display = 'flex';
 
-        if (window.ArcadeLeaderboard) {
-          window.ArcadeLeaderboard.show({
-            gameId: 'neon-pachinko-pop',
-            score: score,
-            scoreUnit: 'PTS',
-            onRestart: restartGame
-          });
-        } else {
-          document.getElementById('modal').style.display = 'flex';
-        }
+        try {
+          if (window.ArcadeLeaderboard) {
+            window.ArcadeLeaderboard.submitScore('neon-pachinko-pop', score);
+          }
+        } catch(e){}
       }
     }
 
