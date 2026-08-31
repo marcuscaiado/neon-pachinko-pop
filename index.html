@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Neon Pachinko Pop 🔮✨</title>
+  <meta name="description" content="Satisfying neon peggle/pachinko bouncy drop game with glowing chain reactions, jackpot buckets, and soothing chimes.">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; }
+    body {
+      background: #060814;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+    }
+    #canvas-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 550px;
+      background: radial-gradient(circle at 50% 20%, #121633 0%, #060814 100%);
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(0, 245, 255, 0.15);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .arcade-nav {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 100;
+      background: rgba(10, 14, 30, 0.85);
+      border: 2px solid #00f5ff;
+      color: #00f5ff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 13px;
+      box-shadow: 0 0 15px rgba(0,245,255,0.3);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+    }
+    .arcade-nav:hover {
+      background: #00f5ff;
+      color: #000;
+      box-shadow: 0 0 25px #00f5ff;
+    }
+    .hud {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: #00f5ff;
+      text-shadow: 0 0 10px #00f5ff;
+      pointer-events: none;
+      z-index: 50;
+      line-height: 1.3;
+    }
+    .balls-left {
+      color: #ff007f;
+      text-shadow: 0 0 10px #ff007f;
+    }
+    #modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(6, 8, 20, 0.88);
+      backdrop-filter: blur(12px);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      padding: 24px;
+      text-align: center;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    #modal h1 {
+      font-size: 34px;
+      font-weight: 900;
+      color: #00f5ff;
+      text-shadow: 0 0 25px rgba(0, 245, 255, 0.6);
+      margin-bottom: 12px;
+    }
+    .modal-stats {
+      font-size: 18px;
+      color: #c4d1eb;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .modal-stats span {
+      color: #ff007f;
+      font-weight: 800;
+      font-size: 22px;
+    }
+    .btn {
+      background: linear-gradient(135deg, #00f5ff, #ff007f);
+      border: none;
+      color: #000;
+      font-weight: 800;
+      font-size: 16px;
+      padding: 14px 32px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(0, 245, 255, 0.4);
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 12px 30px rgba(255, 0, 127, 0.5);
+    }
+    .aim-hint {
+      position: absolute;
+      bottom: 85px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.65);
+      letter-spacing: 1px;
+      pointer-events: none;
+      text-align: center;
+      white-space: nowrap;
+      z-index: 50;
+      font-weight: 600;
+    }
+    @media (max-width: 600px) {
+      .hud { font-size: 16px; }
+      .arcade-nav { font-size: 11px; padding: 6px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <a href="https://marcuscaiado.github.io/marcus-arcade/" class="arcade-nav">🕹️ Arcade Hub</a>
+    
+    <div class="hud">
+      <div>SCORE: <span id="score-val">0</span></div>
+      <div class="balls-left">ORBS: <span id="balls-val">10</span> 🔮</div>
+    </div>
+
+    <canvas id="gameCanvas" width="550" height="800"></canvas>
+
+    <div class="aim-hint">AIM & TAP TO LAUNCH • CATCH IN BUCKET FOR FREE ORBS!</div>
+
+    <div id="modal">
+      <h1 id="modal-title">ROUND CLEARED! 🏆</h1>
+      <div class="modal-stats">
+        FINAL SCORE: <span id="final-score">0</span><br>
+        BEST SCORE: <span id="best-score">0</span>
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+        <button class="btn" onclick="restartGame()">PLAY AGAIN 🔄</button>
+        <a href="https://marcuscaiado.github.io/marcus-arcade/" class="btn" style="background:#151833; color:#00f5ff; border:1px solid #00f5ff;">ARCADE HUB 🕹️</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ==========================================
+    // PROCEDURAL HARMONIC AUDIO SYNTH
+    // ==========================================
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
+    function playPegSound(hitStreak, isOrange, isGreen) {
+      try {
+        const c = getAudio();
+        const freq = scale[Math.min(hitStreak, scale.length - 1)];
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = isGreen ? 'triangle' : (isOrange ? 'sine' : 'sine');
+        osc.frequency.setValueAtTime(isOrange ? freq * 1.5 : freq, c.currentTime);
+        gain.gain.setValueAtTime(0.18, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start();
+        osc.stop(c.currentTime + 0.35);
+      } catch(e) {}
+    }
+
+    function playCatchSound() {
+      try {
+        const c = getAudio();
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, i) => {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, c.currentTime + i * 0.06);
+          gain.gain.setValueAtTime(0.15, c.currentTime + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.06 + 0.25);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(c.currentTime + i * 0.06);
+          osc.stop(c.currentTime + i * 0.06 + 0.25);
+        });
+      } catch(e) {}
+    }
+
+    // ==========================================
+    // GAME STATE & CONSTANTS
+    // ==========================================
+    let score = 0;
+    let ballsRemaining = 10;
+    let bestScore = parseInt(localStorage.getItem('neon_pachinko_best') || '0', 10);
+    let isGameOver = false;
+
+    // Cannon
+    const cannon = { x: 275, y: 55, angle: Math.PI / 2, length: 42 };
+
+    // Active Dropping Balls
+    let activeBalls = [];
+
+    // Pegs Field
+    let pegs = [];
+
+    // Moving Bucket at bottom
+    const bucket = { x: 275, y: 745, w: 100, h: 32, vx: 2.2 };
+
+    // VFX Particles
+    let particles = [];
+    let floatingTexts = [];
+
+    function initPegField() {
+      pegs = [];
+      const rows = 9;
+      const cols = 9;
+      const startY = 160;
+      const spacingY = 55;
+      const spacingX = 48;
+
+      for (let r = 0; r < rows; r++) {
+        const rowCols = r % 2 === 0 ? cols : cols - 1;
+        const startX = r % 2 === 0 ? (550 - (rowCols - 1) * spacingX) / 2 : (550 - (rowCols - 1) * spacingX) / 2;
+
+        for (let c = 0; c < rowCols; c++) {
+          const rand = Math.random();
+          let type = 'blue';
+          let color = '#00f5ff';
+          let pts = 50;
+
+          if (rand < 0.22) {
+            type = 'orange'; // Goal peg
+            color = '#ff9f43';
+            pts = 250;
+          } else if (rand < 0.32) {
+            type = 'green'; // Super bounce
+            color = '#05ffa1';
+            pts = 150;
+          } else if (rand < 0.40) {
+            type = 'magenta'; // Multi-ball
+            color = '#ff007f';
+            pts = 200;
+          }
+
+          pegs.push({
+            x: startX + c * spacingX,
+            y: startY + r * spacingY,
+            r: 10,
+            type: type,
+            color: color,
+            pts: pts,
+            hit: false,
+            hitTimer: 0,
+            pulse: 0
+          });
+        }
+      }
+    }
+
+    function fireBall() {
+      if (isGameOver || ballsRemaining <= 0) return;
+      getAudio();
+
+      const speed = 7.5;
+      const vx = Math.cos(cannon.angle) * speed;
+      const vy = Math.sin(cannon.angle) * speed;
+
+      activeBalls.push({
+        x: cannon.x + Math.cos(cannon.angle) * cannon.length,
+        y: cannon.y + Math.sin(cannon.angle) * cannon.length,
+        vx: vx,
+        vy: vy,
+        r: 9,
+        hitStreak: 0,
+        color: '#ffffff'
+      });
+
+      ballsRemaining--;
+      document.getElementById('balls-val').textContent = ballsRemaining;
+    }
+
+    function spawnParticles(x, y, color, count = 12) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 1 + Math.random() * 4;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          r: 2 + Math.random() * 2,
+          color: color,
+          alpha: 1
+        });
+      }
+    }
+
+    function addFloatingText(txt, x, y, color = '#00f5ff') {
+      floatingTexts.push({
+        text: txt,
+        x: x,
+        y: y,
+        vy: -1.2,
+        color: color,
+        alpha: 1
+      });
+    }
+
+    function restartGame() {
+      score = 0;
+      ballsRemaining = 10;
+      isGameOver = false;
+      activeBalls = [];
+      particles = [];
+      floatingTexts = [];
+      document.getElementById('score-val').textContent = '0';
+      document.getElementById('balls-val').textContent = '10';
+      document.getElementById('modal').style.display = 'none';
+      initPegField();
+    }
+
+    function checkEndRound() {
+      if (ballsRemaining === 0 && activeBalls.length === 0 && !isGameOver) {
+        isGameOver = true;
+        bestScore = Math.max(bestScore, score);
+        localStorage.setItem('neon_pachinko_best', bestScore);
+        document.getElementById('final-score').textContent = score;
+        document.getElementById('best-score').textContent = bestScore;
+        document.getElementById('modal').style.display = 'flex';
+      }
+    }
+
+    // ==========================================
+    // INPUT HANDLING
+    // ==========================================
+    function setAim(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (clientX - rect.left) * scaleX;
+      const my = (clientY - rect.top) * scaleY;
+
+      const dx = mx - cannon.x;
+      const dy = my - cannon.y;
+      cannon.angle = Math.atan2(dy, dx);
+
+      // Clamp cannon angle so it only points downward into the board
+      const minAngle = 0.25;
+      const maxAngle = Math.PI - 0.25;
+      cannon.angle = Math.max(minAngle, Math.min(maxAngle, cannon.angle));
+    }
+
+    window.addEventListener('pointermove', (e) => setAim(e.clientX, e.clientY));
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.arcade-nav, #modal, button')) return;
+      setAim(e.clientX, e.clientY);
+      fireBall();
+    });
+
+    // ==========================================
+    // GAME LOOP
+    // ==========================================
+    const gravity = 0.16;
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update & Draw Bucket
+      bucket.x += bucket.vx;
+      if (bucket.x - bucket.w / 2 < 20 || bucket.x + bucket.w / 2 > 530) {
+        bucket.vx *= -1;
+      }
+
+      // Draw Bucket
+      ctx.save();
+      ctx.shadowColor = '#00f5ff';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.2)';
+      ctx.strokeStyle = '#00f5ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(bucket.x - bucket.w / 2, bucket.y, bucket.w, bucket.h, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('+FREE ORB', bucket.x, bucket.y + 20);
+      ctx.restore();
+
+      // Trajectory Guide Dots
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.35)';
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.5)';
+      for (let i = 1; i <= 6; i++) {
+        const dotDist = i * 22;
+        const dx = cannon.x + Math.cos(cannon.angle) * dotDist;
+        const dy = cannon.y + Math.sin(cannon.angle) * dotDist;
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Draw Cannon
+      ctx.save();
+      ctx.translate(cannon.x, cannon.y);
+      ctx.rotate(cannon.angle);
+      ctx.shadowColor = '#00f5ff';
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = '#151833';
+      ctx.strokeStyle = '#00f5ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(0, -9, cannon.length, 18, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // Cannon Base Ring
+      ctx.beginPath();
+      ctx.arc(cannon.x, cannon.y, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff007f';
+      ctx.shadowColor = '#ff007f';
+      ctx.shadowBlur = 15;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Update & Draw Pegs
+      for (let i = pegs.length - 1; i >= 0; i--) {
+        const p = pegs[i];
+        if (p.hit) {
+          p.pulse = Math.max(0, p.pulse - 0.05);
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + p.pulse * 4, 0, Math.PI * 2);
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = p.hit ? 20 : 8;
+        ctx.fillStyle = p.hit ? '#ffffff' : p.color;
+        ctx.fill();
+
+        // Inner glowing core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 0.45, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Update & Draw Active Balls
+      for (let i = activeBalls.length - 1; i >= 0; i--) {
+        const b = activeBalls[i];
+        b.vy += gravity;
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // Bounce on left / right walls
+        if (b.x - b.r < 10) { b.x = 10 + b.r; b.vx *= -0.85; }
+        if (b.x + b.r > 540) { b.x = 540 - b.r; b.vx *= -0.85; }
+
+        // Ball - Peg Collisions
+        for (const p of pegs) {
+          const dx = b.x - p.x;
+          const dy = b.y - p.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < b.r + p.r) {
+            // Collision normal
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            // Elastic bounce
+            const bounce = p.type === 'green' ? 1.6 : 0.88;
+            const dot = b.vx * nx + b.vy * ny;
+            b.vx = (b.vx - 2 * dot * nx) * bounce;
+            b.vy = (b.vy - 2 * dot * ny) * bounce;
+
+            // Separate
+            b.x = p.x + nx * (b.r + p.r + 1);
+            b.y = p.y + ny * (b.r + p.r + 1);
+
+            if (!p.hit) {
+              p.hit = true;
+              p.pulse = 1.2;
+              b.hitStreak++;
+              score += p.pts * Math.min(b.hitStreak, 5);
+              document.getElementById('score-val').textContent = score;
+              spawnParticles(p.x, p.y, p.color, 10);
+              addFloatingText(`+${p.pts}`, p.x, p.y - 12, p.color);
+              playPegSound(b.hitStreak, p.type === 'orange', p.type === 'green');
+
+              // Multi-ball trigger
+              if (p.type === 'magenta') {
+                activeBalls.push({
+                  x: b.x,
+                  y: b.y,
+                  vx: (Math.random() - 0.5) * 6,
+                  vy: -4,
+                  r: 9,
+                  hitStreak: b.hitStreak,
+                  color: '#ff007f'
+                });
+                addFloatingText('MULTI-BALL! 🔮', p.x, p.y - 28, '#ff007f');
+              }
+            }
+          }
+        }
+
+        // Check Bucket Catch at bottom
+        if (b.y + b.r >= bucket.y && b.y - b.r <= bucket.y + bucket.h &&
+            b.x >= bucket.x - bucket.w / 2 && b.x <= bucket.x + bucket.w / 2) {
+          ballsRemaining++;
+          document.getElementById('balls-val').textContent = ballsRemaining;
+          score += 500;
+          document.getElementById('score-val').textContent = score;
+          playCatchSound();
+          spawnParticles(b.x, b.y, '#00f5ff', 24);
+          addFloatingText('FREE ORB! +500 ✨', bucket.x, bucket.y - 20, '#00f5ff');
+          activeBalls.splice(i, 1);
+          continue;
+        }
+
+        // Out of bottom boundary
+        if (b.y > 820) {
+          activeBalls.splice(i, 1);
+          continue;
+        }
+
+        // Draw Ball
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.shadowColor = b.color;
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = b.color;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Update & Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.alpha -= 0.025;
+        if (pt.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = pt.alpha;
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Update & Draw Floating Score Texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy;
+        ft.alpha -= 0.02;
+        if (ft.alpha <= 0) {
+          floatingTexts.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = ft.alpha;
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+
+      checkEndRound();
+      requestAnimationFrame(loop);
+    }
+
+    initPegField();
+    loop();
+  </script>
+</body>
+</html>
