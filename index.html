@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Neon Pachinko Pop 🔮✨</title>
   <meta name="description" content="Satisfying neon peggle/pachinko bouncy drop game with glowing chain reactions, jackpot buckets, and soothing chimes.">
+  <script src="arcade-leaderboard.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; }
     body {
@@ -364,7 +365,17 @@
         localStorage.setItem('neon_pachinko_best', bestScore);
         document.getElementById('final-score').textContent = score;
         document.getElementById('best-score').textContent = bestScore;
-        document.getElementById('modal').style.display = 'flex';
+
+        if (window.ArcadeLeaderboard) {
+          window.ArcadeLeaderboard.show({
+            gameId: 'neon-pachinko-pop',
+            score: score,
+            scoreUnit: 'PTS',
+            onRestart: restartGame
+          });
+        } else {
+          document.getElementById('modal').style.display = 'flex';
+        }
       }
     }
 
