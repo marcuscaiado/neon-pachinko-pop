@@ -243,7 +243,13 @@
     let pegs = [];
 
     // Moving Bucket at bottom
-    const bucket = { x: 275, y: 745, w: 100, h: 32, vx: 2.2 };
+    const bucket = {
+      x: 275,
+      y: 730,
+      w: 110,
+      h: 28,
+      vx: 2.4
+    };
 
     // VFX Particles
     let particles = [];
@@ -267,18 +273,22 @@
           let color = '#00f5ff';
           let pts = 50;
 
-          if (rand < 0.22) {
+          if (rand < 0.20) {
             type = 'orange'; // Goal peg
             color = '#ff9f43';
-            pts = 250;
+            pts = 300;
           } else if (rand < 0.32) {
             type = 'green'; // Super bounce
             color = '#05ffa1';
             pts = 150;
-          } else if (rand < 0.40) {
+          } else if (rand < 0.44) {
             type = 'magenta'; // Multi-ball
             color = '#ff007f';
-            pts = 200;
+            pts = 250;
+          } else if (rand < 0.52) {
+            type = 'gold'; // Jackpot peg
+            color = '#ffd32a';
+            pts = 500;
           }
 
           pegs.push({
@@ -431,19 +441,19 @@
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('+FREE ORB', bucket.x, bucket.y + 20);
+      ctx.fillText('+FREE ORB ✨', bucket.x, bucket.y + 19);
       ctx.restore();
 
-      // Trajectory Guide Dots
+      // Extended 12-Dot Trajectory Laser Guide
       ctx.save();
       ctx.strokeStyle = 'rgba(0, 245, 255, 0.35)';
-      ctx.fillStyle = 'rgba(0, 245, 255, 0.5)';
-      for (let i = 1; i <= 6; i++) {
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.6)';
+      for (let i = 1; i <= 12; i++) {
         const dotDist = i * 22;
         const dx = cannon.x + Math.cos(cannon.angle) * dotDist;
-        const dy = cannon.y + Math.sin(cannon.angle) * dotDist;
+        const dy = cannon.y + Math.sin(cannon.angle) * dotDist + (i * i * 0.4);
         ctx.beginPath();
-        ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+        ctx.arc(dx, dy, Math.max(1.5, 3 - i * 0.12), 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
