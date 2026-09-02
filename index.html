@@ -371,6 +371,8 @@
     function checkEndRound() {
       if (ballsRemaining === 0 && activeBalls.length === 0 && !isGameOver) {
         isGameOver = true;
+        if (window.DopamineSynth) window.DopamineSynth.playWin();
+        if (window.DopamineJuice) window.DopamineJuice.explodeConfetti(window.innerWidth / 2, window.innerHeight * 0.4, 65);
         bestScore = Math.max(bestScore, score);
         localStorage.setItem('neon_pachinko_best', bestScore);
         document.getElementById('final-score').textContent = score;
@@ -541,11 +543,24 @@
               p.hit = true;
               p.pulse = 1.2;
               b.hitStreak++;
-              score += p.pts * Math.min(b.hitStreak, 5);
+              const pts = p.pts * Math.min(b.hitStreak, 5);
+              score += pts;
               document.getElementById('score-val').textContent = score;
               spawnParticles(p.x, p.y, p.color, 10);
-              addFloatingText(`+${p.pts}`, p.x, p.y - 12, p.color);
-              playPegSound(b.hitStreak, p.type === 'orange', p.type === 'green');
+              addFloatingText(`+${pts}`, p.x, p.y - 12, p.color);
+
+              if (window.DopamineSynth) {
+                window.DopamineSynth.playCombo(b.hitStreak);
+              } else {
+                playPegSound(b.hitStreak, p.type === 'orange', p.type === 'green');
+              }
+
+              if (window.DopamineJuice) {
+                const rect = canvas.getBoundingClientRect();
+                const sx = rect.left + (p.x / canvas.width) * rect.width;
+                const sy = rect.top + (p.y / canvas.height) * rect.height;
+                window.DopamineJuice.spawnScore(sx, sy, `+${pts} 🔮`, b.hitStreak);
+              }
 
               // Multi-ball trigger
               if (p.type === 'magenta') {
@@ -571,7 +586,15 @@
           document.getElementById('balls-val').textContent = ballsRemaining;
           score += 500;
           document.getElementById('score-val').textContent = score;
-          playCatchSound();
+          if (window.DopamineSynth) {
+            window.DopamineSynth.playScore(0.3);
+          } else {
+            playCatchSound();
+          }
+          if (window.DopamineJuice) {
+            const rect = canvas.getBoundingClientRect();
+            window.DopamineJuice.spawnScore(rect.left + (b.x / canvas.width) * rect.width, rect.top + (b.y / canvas.height) * rect.height, '+500 FREE ORB! 🎯', 4);
+          }
           spawnParticles(b.x, b.y, '#00f5ff', 24);
           addFloatingText('FREE ORB! +500 ✨', bucket.x, bucket.y - 20, '#00f5ff');
           activeBalls.splice(i, 1);
