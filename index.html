@@ -6,6 +6,7 @@
   <title>Neon Pachinko Pop 🔮✨</title>
   <meta name="description" content="Satisfying neon peggle/pachinko bouncy drop game with glowing chain reactions, jackpot buckets, and soothing chimes.">
   <script src="arcade-sound-engine.js"></script>
+  <script src="arcade-difficulty.js"></script>
   <script src="arcade-leaderboard.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; }
@@ -366,6 +367,7 @@
     }
 
     function restartGame() {
+      if (window.ArcadeDifficulty) ArcadeDifficulty.reset();
       score = 0;
       ballsRemaining = 10;
       isGameOver = false;
@@ -433,7 +435,9 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Update & Draw Bucket
-      bucket.x += bucket.vx;
+      const ddaMult = window.ArcadeDifficulty ? ArcadeDifficulty.getMultiplier(score, 2500, 1.9) : 1.0;
+      bucket.w = Math.max(78, 110 - (ddaMult - 1.0) * 20);
+      bucket.x += bucket.vx * ddaMult;
       if (bucket.x - bucket.w / 2 < 20 || bucket.x + bucket.w / 2 > 530) {
         bucket.vx *= -1;
       }
