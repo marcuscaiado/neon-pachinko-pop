@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Neon Pachinko Pop 🔮✨</title>
   <meta name="description" content="Satisfying neon peggle/pachinko bouncy drop game with glowing chain reactions, jackpot buckets, and soothing chimes.">
+  <script src="arcade-sound-engine.js"></script>
   <script src="arcade-leaderboard.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; }
@@ -190,6 +191,11 @@
 
     const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
     function playPegSound(hitStreak, isOrange, isGreen) {
+      if (window.arcadeAudio) {
+        window.arcadeAudio.playCollectStreak(hitStreak);
+        window.arcadeAudio.playBounce(1.0 + (hitStreak % 6) * 0.08, isGreen ? 'wood' : 'metal');
+        return;
+      }
       try {
         const c = getAudio();
         const freq = scale[Math.min(hitStreak, scale.length - 1)];
@@ -207,6 +213,10 @@
     }
 
     function playCatchSound() {
+      if (window.arcadeAudio) {
+        window.arcadeAudio.playTriumph();
+        return;
+      }
       try {
         const c = getAudio();
         const notes = [523.25, 659.25, 783.99, 1046.50];
